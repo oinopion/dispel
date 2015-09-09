@@ -1,65 +1,42 @@
 #!/usr/bin/env python3.4
-#
-# TODO:
-#  - load designated file
-#  - rewrite assert statement
-#  - execute tests
 
-import re
+import ast
+import importlib.util
+import os.path
 import sys
-import importlib
-import traceback
-
-SUCCESS = '.'
-FAILURE = 'F'
+import transformer
 
 
-def main(*test_file_names):
-    modules = import_from_files(test_file_names)
-    tests = find_module_tests(modules)
-    results = execute_all_tests(tests)
-    print_report(results)
+def import_hook(path):
+    # import_hook will be called for every item in `sys.path`
+    if os.path.abspath('') == path:
+        return Importer()
+    else:
+        raise ImportError
 
 
-def import_from_files(file_names):
-    for file_name in file_names:
-        module_name = re.sub(r'\.py$', '', file_name)
-        yield importlib.import_module(module_name)
+sys.path_hooks.insert(0, import_hook)
+sys.path_importer_cache.clear()
 
 
-def find_module_tests(modules):
-    for module in modules:
-        test_names = [n for n in dir(module) if n.startswith('test')]
-        yield from (getattr(module, n) for n in test_names)
+class Importer:
+    def find_spec(self, module, target=None):
+        file_name = module + '.py'
+        spec = importlib.util.spec_from_file_location(
+            name=module, location=file_name, loader=self)
+        return spec
 
+    def exec_module(self, module):
+        with open(module.__file__, 'rb') as fp:
+            source_bytes = fp.read()
 
-def execute_all_tests(tests):
-    return [(t, execute_test(t)) for t in tests]
-
-
-def execute_test(test):
-    try:
-        test()
-        return SUCCESS, None
-    except KeyboardInterrupt:
-        raise
-    except Exception as e:
-        return FAILURE, sys.exc_info()
-
-
-def print_report(results):
-    errors = []
-    for test, (symbol, exc_info) in results:
-        module, name = test.__module__, test.__name__
-        print('%s.%s: %s' % (module, name, symbol))
-
-        if symbol == FAILURE:
-            errors.append((test, exc_info))
-
-    for test, (type, value, tb) in errors:
-        print('\n=== %s.%s ===' % (test.__module__, test.__name__))
-        traceback.print_exception(type, value, tb)
+        ast_tree = ast.parse(source_bytes, module.__file__)
+        ast_tree = transformer.AssertRewrite().visit(ast_tree)
+        code = compile(ast_tree, module.__file__, 'exec')
+        exec(code, module.__dict__)
 
 
 if __name__ == '__main__':
-    main(*sys.argv[1:])
+    import sample_test
+
+    sample_test.test_adding_string_and_int()
