@@ -31,7 +31,7 @@ class Importer:
             source_bytes = fp.read()
 
         ast_tree = ast.parse(source_bytes, module.__file__)
-        ast_tree = transformer.AssertRewrite().visit(ast_tree)
+        ast_tree = transformer.transform(ast_tree)
         code = compile(ast_tree, module.__file__, 'exec')
         exec(code, module.__dict__)
 
@@ -39,4 +39,4 @@ class Importer:
 if __name__ == '__main__':
     import sample_test
 
-    sample_test.test_adding_string_and_int()
+    sample_test.test_adding_ints()
