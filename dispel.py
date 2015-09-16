@@ -10,7 +10,7 @@ import transformer
 def import_hook(path):
     # import_hook will be called for every item in `sys.path`
     if os.path.abspath('') == path:
-        return Importer()
+        return Finder()
     else:
         raise ImportError
 
@@ -19,13 +19,15 @@ sys.path_hooks.insert(0, import_hook)
 sys.path_importer_cache.clear()
 
 
-class Importer:
+class Finder:
     def find_spec(self, module, target=None):
         file_name = module + '.py'
         spec = importlib.util.spec_from_file_location(
-            name=module, location=file_name, loader=self)
+            name=module, location=file_name, loader=Loader())
         return spec
 
+
+class Loader:
     def exec_module(self, module):
         with open(module.__file__, 'rb') as fp:
             source_bytes = fp.read()
@@ -39,4 +41,4 @@ class Importer:
 if __name__ == '__main__':
     import sample_test
 
-    sample_test.test_adding_ints()
+    sample_test.test_doubling()

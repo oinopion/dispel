@@ -17,7 +17,7 @@ class SimpleAssertRewrite(ast.NodeTransformer):
 
 class AssertRewrite(ast.NodeTransformer):
     def visit_Assert(self, node):
-        if not is_eq(node):
+        if not is_eq(node.test):
             return node
 
         func = ast.Attribute(
@@ -30,7 +30,7 @@ class AssertRewrite(ast.NodeTransformer):
             args=[node.test.left, node.test.comparators[0]],
             keywords=[]
         )
-        # Wrap the call in an Expr node, because the return value isn't used.
+
         new_node = ast.Expr(value=call)
         ast.copy_location(new_node, node)
         ast.fix_missing_locations(new_node)
@@ -38,9 +38,9 @@ class AssertRewrite(ast.NodeTransformer):
 
 
 def is_eq(node):
-    return (isinstance(node.test, ast.Compare) and
-            len(node.test.ops) == 1 and
-            isinstance(node.test.ops[0], ast.Eq))
+    return (isinstance(node, ast.Compare) and
+            len(node.ops) == 1 and
+            isinstance(node.ops[0], ast.Eq))
 
 
 def transform(ast_tree):
