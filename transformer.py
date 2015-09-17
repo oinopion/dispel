@@ -1,25 +1,22 @@
 import ast
 
 
-class SimpleAssertRewrite(ast.NodeTransformer):
+class DisableAssestion(ast.NodeTransformer):
     def visit_Assert(self, node):
         print_node = ast.Expr(value=ast.Call(
             func=ast.Name(id='print', ctx=ast.Load()),
-            args=[ast.Str('Asserting!!!')],
+            args=[ast.Str('Asserting disabled!!!')],
             keywords=[],
         ))
 
         ast.copy_location(print_node, node)
         ast.fix_missing_locations(print_node)
 
-        return [print_node, node]
+        return [print_node]
 
 
 class AssertRewrite(ast.NodeTransformer):
     def visit_Assert(self, node):
-        if not is_eq(node.test):
-            return node
-
         func = ast.Attribute(
             value=ast.Name(id='@utils', ctx=ast.Load()),
             attr='assert_equals',
