@@ -31,6 +31,9 @@ class Finder:
 
 
 class Loader:
+    def create_module(self, spec):
+        return None
+
     def exec_module(self, module):
         with open(module.__file__, 'rb') as fp:
             source = fp.read()
